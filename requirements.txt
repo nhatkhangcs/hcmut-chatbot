@@ -1,0 +1,2 @@
+farm-haystack[all-gpu]==1.24
+qdrant-haystack<2.0.0
