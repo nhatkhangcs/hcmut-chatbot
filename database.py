@@ -55,9 +55,9 @@ def initialize_db(args):
     if not ("text" in web_df.columns and "tables" in web_df.columns):
         raise KeyError("WEB file must have two keys 'text' and 'tables'")
 
-    # if args.dev:
-    faq_df = faq_df.head(10)
-    web_df = web_df.head(20)
+    if args.dev:
+        faq_df = faq_df.head(10)
+        web_df = web_df.head(20)
 
     faq_documents = []
     idx = 0
