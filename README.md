@@ -24,4 +24,7 @@ uvicorn main:app --host 0.0.0.0 \
                  --workers 4 \
                  --root-path llama/haystack
 
+or
+
+python main.py
 ```
