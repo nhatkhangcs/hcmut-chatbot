@@ -1,5 +1,9 @@
 # INITIALIZE DATABASE
 #####################################################################################
+import sys
+import os
+sys.path.append(os.getcwd())
+
 import re
 import pandas as pd
 from envs import *
@@ -12,6 +16,7 @@ from qdrant_haystack import QdrantDocumentStore
 
 def initialize_db(args):
     print("[+] Initialize database...")
+
     if args.dev:
         document_store = InMemoryDocumentStore(
             use_gpu=False, 
@@ -27,7 +32,7 @@ def initialize_db(args):
             timeout=DB_TIMEOUT,
             embedding_field="embedding",
             hnsw_config={"m": 128, "ef_construct": 100},
-            similarity="dot_product",
+            similarity="cosine" if args.cosine else "dot_product",
             recreate_index=(not args.no_reindex),
             index="faq"
         )
@@ -44,55 +49,30 @@ def initialize_db(args):
         max_chars_check=int(EMBEDDING_MAX_LENGTH * 1.5),
     )
 
-    if FAQ_FILE.endswith(".csv"):
+    if FAQ_FILE.endswith(".xlsx"):
+        faq_df = pd.read_excel(FAQ_FILE)
+    if FAQ_FILE.endswith("csv"):
         faq_df = pd.read_csv(FAQ_FILE)
-    elif FAQ_FILE.endswith(".json"):
-        faq_df = pd.read_json(FAQ_FILE)
+    else:
+        raise TypeError("Input file 'FAQ_FILE' is not excel, please check again")
 
-    if not ("query" in faq_df.columns and "answer" in faq_df.columns):
-        raise KeyError("FAQ file must have two keys 'query' and 'answer'")
-
-    if WEB_FILE.endswith(".csv"):
-        web_df = pd.read_csv(WEB_FILE)
-    elif WEB_FILE.endswith(".json"):
-        web_df = pd.read_json(WEB_FILE)
-
-    if not ("text" in web_df.columns and "tables" in web_df.columns):
-        raise KeyError("WEB file must have two keys 'text' and 'tables'")
-
-    if args.dev:
-        faq_df = faq_df.head(10)
-        web_df = web_df.head(20)
+    # if args.dev:
+    #     faq_df = faq_df.head(10)
 
     faq_documents = []
     idx = 0
     for _, d in tqdm(faq_df.iterrows(), desc="Loading FAQ..."):
-        content = "Câu hỏi: " + d["query"] + " - Trả lời: " + d["answer"]
-        faq_documents.append(Document(content=content, id=idx))
+        content = d["Question"]
+        faq_documents.append(Document(content=content, id=idx, meta={'answer': d["Question"]}))
         idx += 1
+
+    print(f"[+] FAQ_FILE rows: {faq_df.shape[0]} - FAQ_DOCUMENTS rows: {len(faq_documents)}")
 
     faq_documents = processor.process(faq_documents)
     document_store.write_documents(
         documents=faq_documents, index="faq", batch_size=DB_BATCH_SIZE
     )
 
-    web_documents = []
-    idx = 0
-    for _, d in tqdm(web_df.iterrows(), desc="Loading web data..."):
-        content = d["text"]
-        web_documents.append(Document(content=content, id=idx))
-        idx += 1
-
-        if len(d["tables"]) > 0:
-            for table in d["tables"]:
-                web_documents.append(
-                    Document(content=table, content_type="table", id=idx)
-                )
-                idx += 1
-
-    web_documents = processor.process(web_documents)
-    document_store.write_documents(
-        documents=web_documents, index="web", batch_size=DB_BATCH_SIZE
-    )
+    print(f"[+] FAQ_PROCESS: {len(faq_documents)} - DOCUMENT_STORE: {len(document_store.get_all_documents())}")
 
     return document_store

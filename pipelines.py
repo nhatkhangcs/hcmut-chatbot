@@ -99,11 +99,13 @@ class ChatbotPipeline:
 
         self.faq_pipeline = Pipeline()
         self.faq_params = {"EmbeddingRetriever": {"index": "faq"}}
+        
         if ENABLE_BM25:
             self.faq_pipeline.add_node(
                 component=retriever, name="Retriever", inputs=["Query"]
             )
             self.faq_params["Retriever"] = {"index": "faq"}
+
         self.faq_pipeline.add_node(
             component=embedding_retriever,
             name="EmbeddingRetriever",
