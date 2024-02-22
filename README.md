@@ -10,6 +10,12 @@ pip install requirements.txt
 python main.py --dev
 ```
 
+## Estimating Retriever
+--cosine: Specifies the use of cosine similarity for document retrieval in the database. If this argument is omitted, the database will default to using 'dot product' similarity.
+```
+python retriever_estimation.py --dev --cosine
+```
+
 ## Production mode
 - **Step 1:** Reserve VRAM for embedding model
 ```
