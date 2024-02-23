@@ -53,9 +53,4 @@ class CreateLabelSerialized(RequestBaseModel):
 
 
 class QueryResponse(BaseModel):
-    query: str
     generated_text: str
-    answers: List[Answer] = []
-    documents: List[Document] = []
-    results: Optional[List[str]] = None
-    debug: Optional[Dict] = Field(None, alias="_debug")

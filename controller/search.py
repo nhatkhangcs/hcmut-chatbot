@@ -85,4 +85,4 @@ def _process_request(pipeline, request) -> Dict[str, Any]:
             default=str,
         )
     )
-    return result
+    return {"generated_text": result["generated_text"]}

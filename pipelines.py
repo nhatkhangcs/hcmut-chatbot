@@ -48,6 +48,10 @@ class ChatbotPipeline:
             prompt=WEB_PROMPT, output_parser={"type": "AnswerParser"}
         )
 
+        prompt_template_free = PromptTemplate(
+            prompt=FREE_PROMPT, output_parser={"type": "AnswerParser"}
+        )
+
         prompt_model = PromptModel(
             model_name_or_path=TGI_URL,
             api_key=API_KEY,
@@ -81,6 +85,23 @@ class ChatbotPipeline:
         prompt_ask = PromptNode(
             model_name_or_path=prompt_model,
             default_prompt_template=prompt_template_ask,
+            api_key=API_KEY,
+            max_length=MAX_ANSWER_LENGTH,
+            top_k=WEB_TOP_K,
+            stop_words=STOP_WORDS,
+            model_kwargs={
+                "model_max_length": MAX_MODEL_LENGTH,
+                "max_new_tokens": MAX_ANSWER_LENGTH,
+                "temperature": WEB_TEMPERATURE,
+                "top_p": WEB_TOP_P,
+                "repetition_penalty": REPETITION_PENALTY,
+                "stream": True,
+            },
+        )
+
+        prompt_free = PromptNode(
+            model_name_or_path=prompt_model,
+            default_prompt_template=prompt_template_free,
             api_key=API_KEY,
             max_length=MAX_ANSWER_LENGTH,
             top_k=WEB_TOP_K,
@@ -136,6 +157,11 @@ class ChatbotPipeline:
             component=prompt_ask, name="prompt_node", inputs=["Threshold"]
         )
 
+        self.fallback_pipeline = Pipeline()
+        self.fallback_pipeline.add_node(
+            component=prompt_free, name="prompt_node", inputs=["Query"]
+        )
+
     def __call__(self, query, **kwargs):
         return self.run(query, **kwargs)
 
@@ -158,8 +184,14 @@ class ChatbotPipeline:
                 or web_ans["answers"][0].answer.strip() == ""
                 or not web_ans["answers"][0].document_ids
             ):
-                chosen_ans = random.choice(DEFAULT_ANSWERS)
-                web_ans["answers"] = [Answer(chosen_ans, type="other")]
+                kwargs["params"].pop('EmbeddingRetriever', None)
+                if 'Retriever' in kwargs["params"]:
+                    kwargs["params"].pop('Retriever', None)
+                    
+                fallback_ans = self.fallback_pipeline.run(query, **kwargs)
+                warning = random.choice(WARNING_NOTES)
+                
+                web_ans["answers"] = [Answer(f"{fallback_ans['answers'][0].answer}\n\n{warning}", type="other")]
 
             return web_ans
 

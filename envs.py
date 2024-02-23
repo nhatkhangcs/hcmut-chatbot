@@ -22,7 +22,7 @@ TGI_URL = "http://localhost:10025"
 API_KEY = "hf_sample_api_key"
 MAX_ANSWER_LENGTH = 4096
 MAX_MODEL_LENGTH = 8192
-STOP_WORDS = ["</s>"]
+STOP_WORDS = ["<end_of_turn>"]
 REPETITION_PENALTY = 1.0
 
 # FAQ HYPERPARAMETERS
@@ -80,7 +80,18 @@ Câu hỏi: {query}
 <start_of_turn>model
 Trả lời: """
 
+FREE_PROMPT = """<start_of_turn>user
+{query}
+<end_of_turn>
+<start_of_turn>model
+"""
+
 # OTHERS
+WARNING_NOTES = [
+    "----------\nXin lưu ý rằng câu trả lời phía trên được sinh ra hoàn toàn từ mô hình ngôn ngữ lớn và không có trong dữ liệu của tôi. Do đó, câu trả lời có thể chứa thông tin sai sự thật hoặc lỗi thời.",
+    "----------\nLưu ý: Câu trả lời có thể sai sự thật hoặc lỗi thời do không có trong dữ liệu của chúng tôi."
+]
+
 DEFAULT_ANSWERS = [
     "Xin lỗi! Tôi chưa có dữ liệu về câu hỏi bạn yêu cầu. Vui lòng thử lại hoặc tìm kiếm thông tin trên trang web chính thức của trường: https://hcmut.edu.vn",
     "Rất tiếc, tôi chưa có câu trả lời cho yêu cầu của bạn. Vui lòng thử lại hoặc tìm kiếm thông tin trên trang web chính thức của trường: https://hcmut.edu.vn",
