@@ -134,8 +134,10 @@ class ChatbotPipeline:
         self.faq_pipeline.add_node(
             component=docs2answers, name="Answer", inputs=["Threshold"]
         )
-        self.faq_pipeline.add_node(
-            component=prompt_paraphrase, name="prompt_node", inputs=["Answer.output_0"]
+        
+        self.paraphrase_pipeline = Pipeline()
+        self.paraphrase_pipeline.add_node(
+            component=prompt_paraphrase, name="prompt_node", inputs=["Query"]
         )
 
         self.web_pipeline = Pipeline()
@@ -153,8 +155,10 @@ class ChatbotPipeline:
         self.web_pipeline.add_node(
             component=web_threshold, name="Threshold", inputs=["EmbeddingRetriever"]
         )
-        self.web_pipeline.add_node(
-            component=prompt_ask, name="prompt_node", inputs=["Threshold"]
+
+        self.llm_pipeline = Pipeline()
+        self.llm_pipeline.add_node(
+            component=prompt_ask, name="prompt_node", inputs=["Query"]
         )
 
         self.fallback_pipeline = Pipeline()
@@ -176,26 +180,29 @@ class ChatbotPipeline:
         
         if len(faq_ans["answers"]) == 0 or faq_ans["answers"][0].answer.strip() == "":
             kwargs["params"].update(self.web_params)
-            kwargs["params"].update({"prompt_node": {"generation_kwargs": llm_params}})
             web_ans = self.web_pipeline.run(query, **kwargs)
+
+            kwargs["params"].pop('EmbeddingRetriever', None)
+            if 'Retriever' in kwargs["params"]:
+                kwargs["params"].pop('Retriever', None)
+            kwargs["params"].update({"prompt_node": {"generation_kwargs": llm_params}})
             
-            if (
-                len(web_ans["answers"]) == 0
-                or web_ans["answers"][0].answer.strip() == ""
-                or not web_ans["answers"][0].document_ids
-            ):
-                kwargs["params"].pop('EmbeddingRetriever', None)
-                if 'Retriever' in kwargs["params"]:
-                    kwargs["params"].pop('Retriever', None)
-                    
-                fallback_ans = self.fallback_pipeline.run(query, **kwargs)
-                warning = random.choice(WARNING_NOTES)
+            if len(web_ans["documents"]) > 0:
+                llm_ans = self.llm_pipeline.run(query, documents=web_ans["documents"], **kwargs)
+                return llm_ans
                 
-                web_ans["answers"] = [Answer(f"{fallback_ans['answers'][0].answer}\n\n{warning}", type="other")]
-
-            return web_ans
-
-        return faq_ans
+            fallback_ans = self.fallback_pipeline.run(query, **kwargs)
+            warning = random.choice(WARNING_NOTES)
+            fallback_ans['answers'][0].answer += f"\n\n{warning}"
+            return fallback_ans
+            
+        kwargs["params"].pop('EmbeddingRetriever', None)
+        if 'Retriever' in kwargs["params"]:
+            kwargs["params"].pop('Retriever', None)
+        kwargs["params"].update({"prompt_node": {"generation_kwargs": llm_params}})
+        template = FAQ_QUERY_TEMPLATE.format(query=query, answer=faq_ans["answers"][0].answer)
+        paraphrased_ans = self.paraphrase_pipeline.run(template, **kwargs)
+        return paraphrased_ans
 
 def get_index_pipeline(document_store, preprocessor, embedding_retriever):
     file_type_classifier = FileTypeClassifier()

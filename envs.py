@@ -44,11 +44,12 @@ FAQ_TOP_K = 50
 # """
 FAQ_PROMPT = """<start_of_turn>user
 Hãy viết lại câu trả lời theo một cách khác dùng thông tin bên dưới.
-Câu hỏi: {query}
-Trả lời: {answers[0]["answer"]}
+{query}
 <end_of_turn>
 <start_of_turn>model
 Câu trả lời mới: """
+FAQ_QUERY_TEMPLATE = """Câu hỏi: {query}
+Trả lời: {answer}"""
 
 # WEB HYPERPARAMETERS
 WEB_FILE = "data/hcmut_data_web.csv"
