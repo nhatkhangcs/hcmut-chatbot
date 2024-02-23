@@ -8,7 +8,7 @@ from haystack.schema import Document
 
 from utils import get_app, get_pipelines
 from rest_api.config import LOG_LEVEL
-from rest_api.schema import FilterRequest
+from schema import FilterRequest
 
 
 logging.getLogger("haystack").setLevel(LOG_LEVEL)

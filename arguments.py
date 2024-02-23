@@ -2,7 +2,10 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "--no_reindex", help="Reindex all database", action="store_false", default=False
+    "--reindex", help="Reindex all database", action="store_true", default=False
+)
+parser.add_argument(
+    "--no_update_emb", help="Wheather", action="store_true", default=False
 )
 parser.add_argument(
     "--dev", help="Enable developing mode", action="store_true", default=False

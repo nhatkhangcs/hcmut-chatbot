@@ -11,6 +11,11 @@ from haystack.nodes import (
     EmbeddingRetriever,
     SentenceTransformersRanker,
     Docs2Answers,
+    TextConverter, 
+    FileTypeClassifier, 
+    PDFToTextConverter, 
+    MarkdownConverter, 
+    DocxToTextConverter
 )
 from invocation_layer import HFInferenceEndpointInvocationLayer
 from custom_plugins import DocumentThreshold
@@ -29,13 +34,6 @@ class ChatbotPipeline:
             embedding_model=EMBEDDING_MODEL,
             model_format="sentence_transformers",
             top_k=EMBEDDING_TOP_K,
-        )
-
-        document_store.update_embeddings(
-            embedding_retriever, index="faq", batch_size=DB_BATCH_SIZE
-        )
-        document_store.update_embeddings(
-            embedding_retriever, index="web", batch_size=DB_BATCH_SIZE
         )
 
         faq_threshold = DocumentThreshold(threshold=FAQ_THRESHOLD)
@@ -142,27 +140,63 @@ class ChatbotPipeline:
         return self.run(query, **kwargs)
 
     def run(self, query, **kwargs):
-        if "params" not in kwargs:
-            kwargs["params"] = {}
+        llm_params = {}
+        if "params" in kwargs:
+            llm_params.update(kwargs["params"])
+        kwargs["params"] = {}
 
         kwargs["params"].update(self.faq_params)
         faq_ans = self.faq_pipeline.run(query, **kwargs)
-
+        
         if len(faq_ans["answers"]) == 0 or faq_ans["answers"][0].answer.strip() == "":
             kwargs["params"].update(self.web_params)
+            kwargs["params"].update({"prompt_node": {"generation_kwargs": llm_params}})
             web_ans = self.web_pipeline.run(query, **kwargs)
-
+            
             if (
                 len(web_ans["answers"]) == 0
                 or web_ans["answers"][0].answer.strip() == ""
+                or not web_ans["answers"][0].document_ids
             ):
                 chosen_ans = random.choice(DEFAULT_ANSWERS)
-                web_ans["answers"].append(Answer(chosen_ans, type="other"))
+                web_ans["answers"] = [Answer(chosen_ans, type="other")]
 
             return web_ans
 
         return faq_ans
 
+def get_index_pipeline(document_store, preprocessor, embedding_retriever):
+    file_type_classifier = FileTypeClassifier()
+    text_converter = TextConverter()
+    pdf_converter = PDFToTextConverter()
+    md_converter = MarkdownConverter()
+    docx_converter = DocxToTextConverter()
+    
+    # This is an indexing pipeline
+    index_pipeline = Pipeline()
+    index_pipeline.add_node(component=file_type_classifier, name="FileTypeClassifier", inputs=["File"])
+    index_pipeline.add_node(component=text_converter, name="TextConverter", inputs=["FileTypeClassifier.output_1"])
+    index_pipeline.add_node(component=pdf_converter, name="PdfConverter", inputs=["FileTypeClassifier.output_2"])
+    index_pipeline.add_node(component=md_converter, name="MarkdownConverter", inputs=["FileTypeClassifier.output_3"])
+    index_pipeline.add_node(component=docx_converter, name="DocxConverter", inputs=["FileTypeClassifier.output_4"])
+
+    index_pipeline.add_node(
+        component=preprocessor,
+        name="Preprocessor",
+        inputs=["TextConverter", "PdfConverter", "MarkdownConverter", "DocxConverter"],
+    )
+    index_pipeline.add_node(
+        component=embedding_retriever,
+        name="EmbeddingRetriever",
+        inputs=["Preprocessor"],
+    )
+    index_pipeline.add_node(
+        component=document_store,
+        name="DocumentStore",
+        inputs=["EmbeddingRetriever"],
+    )
+
+    return index_pipeline
 
 def setup_pipelines(args):
     # Re-import the configuration variables
@@ -170,11 +204,24 @@ def setup_pipelines(args):
     from rest_api.controller.utils import RequestLimiter
 
     pipelines = {}
-    document_store = initialize_db(args)
+    document_store, preprocessor = initialize_db(args)
 
     # Load query pipeline & document store
     print("[+] Setting up pipeline...")
     pipelines["query_pipeline"] = ChatbotPipeline(document_store)
+
+    if not args.no_update_emb:
+        print("[+] Updating document embedding...")
+        document_store.update_embeddings(
+            pipelines["query_pipeline"].faq_pipeline.get_node("EmbeddingRetriever"), 
+            index="faq", 
+            batch_size=DB_BATCH_SIZE
+        )
+        document_store.update_embeddings(
+            pipelines["query_pipeline"].web_pipeline.get_node("EmbeddingRetriever"), 
+            index="web", 
+            batch_size=DB_BATCH_SIZE
+        )
     pipelines["document_store"] = document_store
 
     # Setup concurrency limiter
@@ -185,12 +232,15 @@ def setup_pipelines(args):
     pipelines["concurrency_limiter"] = concurrency_limiter
 
     # Load indexing pipeline
-    # index_pipeline, _ = _load_pipeline(config.PIPELINE_YAML_PATH, config.INDEXING_PIPELINE_NAME)
-    # if not index_pipeline:
-    #     logger.warning("Indexing Pipeline is not setup. File Upload API will not be available.")
-    #     # Create directory for uploaded files
-    #     os.makedirs(config.FILE_UPLOAD_PATH, exist_ok=True)
-    index_pipeline = None
+    index_pipeline = get_index_pipeline(
+        document_store,
+        preprocessor=preprocessor,
+        embedding_retriever=pipelines["query_pipeline"].web_pipeline.get_node("EmbeddingRetriever"),
+    )
+    if not index_pipeline:
+        logger.warning("Indexing Pipeline is not setup. File Upload API will not be available.")
+        # Create directory for uploaded files
+        os.makedirs(FILE_UPLOAD_PATH, exist_ok=True)
     pipelines["indexing_pipeline"] = index_pipeline
 
     return pipelines

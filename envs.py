@@ -1,3 +1,6 @@
+# FILE UPLOAD
+FILE_UPLOAD_PATH = "./uploaded_files"
+
 # DATABASE ENDPOINT
 QDRANTDB_URL = "http://103.176.178.107:6333"
 DB_BATCH_SIZE = 256
@@ -14,38 +17,68 @@ EMBEDDING_MAX_LENGTH = 256
 EMBEDDING_TOP_K = 3
 
 # LLM API ENDPOINT
-LLM_MODEL = "ura-hcmut/ura-llama-7b"
+LLM_MODEL = "google/gemma-7b-it"
 TGI_URL = "http://localhost:10025"
 API_KEY = "hf_sample_api_key"
-MAX_ANSWER_LENGTH = 2048
-MAX_MODEL_LENGTH = 4096
+MAX_ANSWER_LENGTH = 4096
+MAX_MODEL_LENGTH = 8192
 STOP_WORDS = ["</s>"]
-REPETITION_PENALTY = 1.1
+REPETITION_PENALTY = 1.0
 
 # FAQ HYPERPARAMETERS
 FAQ_FILE = "data/hcmut_data_faq.csv"
 FAQ_THRESHOLD = 80
-FAQ_TEMPERATURE = 0.3
-FAQ_TOP_P = 0.9
+FAQ_TEMPERATURE = 0.5
+FAQ_TOP_P = 0.99
 FAQ_TOP_K = 50
-FAQ_PROMPT = """<s> [INST] <<SYS>> Hãy viết lại câu trả lời dùng thông tin bên dưới. <</SYS>>
+# FAQ_PROMPT = """<s> [INST] <<SYS>> Hãy viết lại câu trả lời dùng thông tin bên dưới. <</SYS>>
+# Câu hỏi: {query}
+# Trả lời: {answers[0]["answer"]}
+
+# Câu trả lời được viết lại: [/INST]"""
+# FAQ_PROMPT = """<s> <|im_start|>system
+# You are a helpful assistant.</s><|im_start|>user
+# Hãy viết lại câu trả lời dùng thông tin bên dưới.
+# Câu hỏi: {query}
+# Trả lời: {answers[0]["answer"]}</s><|im_start|>assistant
+# """
+FAQ_PROMPT = """<start_of_turn>user
+Hãy viết lại câu trả lời theo một cách khác dùng thông tin bên dưới.
 Câu hỏi: {query}
 Trả lời: {answers[0]["answer"]}
-
-Câu trả lời được viết lại: [/INST]"""
+<end_of_turn>
+<start_of_turn>model
+Câu trả lời mới: """
 
 # WEB HYPERPARAMETERS
-WEB_FILE = "data/hcmut_data_web.json"
+WEB_FILE = "data/hcmut_data_web.csv"
 WEB_THRESHOLD = 50
-WEB_TEMPERATURE = 0.6
-WEB_TOP_P = 0.9
+WEB_TEMPERATURE = 0.5
+WEB_TOP_P = 0.99
 WEB_TOP_K = 50
-WEB_PROMPT = """<s> [INST] <<SYS>> Trả lời câu hỏi bằng ngữ cảnh cho sẵn. <</SYS>>
+# WEB_PROMPT = """<s> [INST] <<SYS>> Trả lời câu hỏi bằng ngữ cảnh cho sẵn. <</SYS>>
+# Ngữ cảnh: '''
+# {join(documents, "\n")}
+# '''
+# Câu hỏi: {query}
+# Trả lời: [/INST]"""
+# WEB_PROMPT = """<s> <|im_start|>system
+# You are a helpful assistant.</s><|im_start|>user
+# Trả lời câu hỏi bằng ngữ cảnh cho sẵn.
+# Ngữ cảnh: '''
+# {join(documents, "\n")}
+# '''
+# Câu hỏi: {query}</s><|im_start|>assistant
+# """
+WEB_PROMPT = """<start_of_turn>user
+Trả lời câu hỏi bằng ngữ cảnh cho sẵn.
 Ngữ cảnh: '''
 {join(documents, "\n")}
 '''
 Câu hỏi: {query}
-Trả lời: [/INST]"""
+<end_of_turn>
+<start_of_turn>model
+Trả lời: """
 
 # OTHERS
 DEFAULT_ANSWERS = [

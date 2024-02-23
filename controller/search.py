@@ -11,8 +11,8 @@ from haystack import Pipeline
 
 from utils import get_app, get_pipelines
 from rest_api.config import LOG_LEVEL
-from rest_api.schema import QueryRequest, QueryResponse
-
+from schema import QueryRequest, QueryResponse
+from envs import DEFAULT_ANSWERS
 
 logging.getLogger("haystack").setLevel(LOG_LEVEL)
 logger = logging.getLogger("haystack")
@@ -47,6 +47,7 @@ def haystack_version():
     return {"hs_version": haystack.__version__}
 
 
+@router.post("/generate", response_model=QueryResponse, response_model_exclude_none=True)
 @router.post("/query", response_model=QueryResponse, response_model_exclude_none=True)
 def query(request: QueryRequest):
     """
@@ -61,15 +62,19 @@ def query(request: QueryRequest):
 def _process_request(pipeline, request) -> Dict[str, Any]:
     start_time = time.time()
 
-    params = request.params or {}
-    result = pipeline.run(query=request.query, params=params, debug=request.debug)
+    params = request.parameters or {}
+    result = pipeline.run(query=request.inputs, params=params, debug=request.debug)
 
     # Ensure answers and documents exist, even if they're empty lists
     if not "documents" in result:
         result["documents"] = []
     if not "answers" in result:
         result["answers"] = []
-
+        chosen_ans = random.choice(DEFAULT_ANSWERS)
+        result["generated_text"] = chosen_ans
+    else:
+        result["generated_text"] = result["answers"][0].answer
+    
     logger.info(
         json.dumps(
             {
