@@ -55,7 +55,7 @@ async def async_query(request: QueryRequest):
     """
     with concurrency_limiter.run():
         result = _process_request(query_pipeline, request)
-        yield "data:"+json.dumps({"token":{"id":0,"text": character,"logprob": 0,"special":False}, "generated_text": result['generated_text']})+"\n\n"
+        yield "data:"+json.dumps({"token":{"id":0,"text":"","logprob": 0,"special":False}, "generated_text": result['generated_text']})+"\n\n"
 
 @router.post("/generate_stream", response_model=QueryResponse, response_model_exclude_none=True)
 async def stream_query(request: QueryRequest):
