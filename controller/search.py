@@ -7,6 +7,7 @@ import random
 
 from pydantic import BaseConfig
 from fastapi import FastAPI, APIRouter
+from fastapi.responses import StreamingResponse
 import haystack
 from haystack import Pipeline
 
@@ -47,6 +48,19 @@ def haystack_version():
     """
     return {"hs_version": haystack.__version__}
 
+async def async_query(request: QueryRequest):
+    """
+    This endpoint receives the question as a string and allows the requester to set
+    additional parameters that will be passed on to the Haystack pipeline.
+    """
+    with concurrency_limiter.run():
+        result = _process_request(query_pipeline, request)
+        yield "data:"+json.dumps({"token":{"id":0,"text": character,"logprob": 0,"special":False}, "generated_text": result['generated_text']})+"\n\n"
+
+@router.post("/generate_stream", response_model=QueryResponse, response_model_exclude_none=True)
+async def stream_query(request: QueryRequest):
+    headers = {'X-Accel-Buffering':'no'}
+    return StreamingResponse(async_query(request), headers=headers, media_type='text/event-stream')
 
 @router.post("/generate", response_model=QueryResponse, response_model_exclude_none=True)
 @router.post("/query", response_model=QueryResponse, response_model_exclude_none=True)
