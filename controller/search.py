@@ -74,7 +74,7 @@ def _process_request(pipeline, request) -> Dict[str, Any]:
         chosen_ans = random.choice(DEFAULT_ANSWERS)
         result["generated_text"] = chosen_ans
     else:
-        result["generated_text"] = result["answers"][0].answer
+        result["generated_text"] = result["answers"][0].answer.strip()
     
     logger.info(
         json.dumps(

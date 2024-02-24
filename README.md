@@ -14,7 +14,7 @@ python main.py --dev
 - **Step 1:** Run TGI
 ```
 text-generation-launcher \
-    --model-id google/gemma-7b-it \
+    --model-id ura-hcmut/GemSUra-7B \
     --port 10025 \
     --watermark-gamma 0.25 \
     --watermark-delta 2 \
@@ -22,14 +22,11 @@ text-generation-launcher \
     --max-total-tokens 8192 \
     --max-batch-prefill-tokens 4096 \
     --trust-remote-code \
-    --cuda-memory-fraction 0.8
+    --cuda-memory-fraction 0.9
 ```
 - **Step 2:** Start the application
 ```
-uvicorn main:app --host 0.0.0.0 \
-                 --port 8000 \
-                 --workers 4 \
-                 --root-path llama/haystack
+uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
 
 or
 

@@ -249,7 +249,7 @@ def setup_pipelines(args):
     print("[+] Setting up pipeline...")
     pipelines["query_pipeline"] = ChatbotPipeline(document_store)
 
-    if not args.no_update_emb:
+    if args.reindex:
         print("[+] Updating document embedding...")
         document_store.update_embeddings(
             pipelines["query_pipeline"].faq_pipeline.get_node("EmbeddingRetriever"), 
