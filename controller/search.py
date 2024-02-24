@@ -13,7 +13,7 @@ from haystack import Pipeline
 
 from utils import get_app, get_pipelines
 from rest_api.config import LOG_LEVEL
-from schema import QueryRequest, QueryResponse
+from schema import QueryRequest, QueryResponse, ChatUIQueryRequest
 from envs import DEFAULT_ANSWERS
 
 logging.getLogger("haystack").setLevel(LOG_LEVEL)
@@ -48,33 +48,59 @@ def haystack_version():
     """
     return {"hs_version": haystack.__version__}
 
-async def async_query(request: QueryRequest):
+
+async def async_query(request: ChatUIQueryRequest):
     """
     This endpoint receives the question as a string and allows the requester to set
     additional parameters that will be passed on to the Haystack pipeline.
     """
     with concurrency_limiter.run():
-        result = _process_request(query_pipeline, request)
-        yield "data:"+json.dumps({"token":{"id":0,"text":"","logprob": 0,"special":False}, "generated_text": result['generated_text']})+"\n\n"
+        result = await _process_request(query_pipeline, request)
+        
+    yield "data:" + json.dumps(
+        {
+            "index": 1,
+            "token": {"id": 1, "text": result["generated_text"], "logprob": 0, "special": False},
+            "generated_text": None,
+            "details": None
+        }, ensure_ascii=False
+    ) + "\n\n"
+            
+    yield "data:" + json.dumps(
+        {
+            "index": 2,
+            "token": {"id": 1, "text": "<eos>", "logprob": 0, "special": True},
+            "generated_text": result["generated_text"],
+            "details": None
+        }, ensure_ascii=False
+    ) + "\n\n"
 
-@router.post("/generate_stream", response_model=QueryResponse, response_model_exclude_none=True)
-async def stream_query(request: QueryRequest):
-    headers = {'X-Accel-Buffering':'no'}
-    return StreamingResponse(async_query(request), headers=headers, media_type='text/event-stream')
 
-@router.post("/generate", response_model=QueryResponse, response_model_exclude_none=True)
+@router.post(
+    "/generate_stream"
+)
+async def stream_query(request: ChatUIQueryRequest):
+    headers = {"X-Accel-Buffering": "no"}
+    return StreamingResponse(
+        async_query(request), headers=headers, media_type="text/event-stream"
+    )
+
+
+@router.post(
+    "/generate", response_model=QueryResponse, response_model_exclude_none=True
+)
 @router.post("/query", response_model=QueryResponse, response_model_exclude_none=True)
-def query(request: QueryRequest):
+async def query(request: QueryRequest):
     """
     This endpoint receives the question as a string and allows the requester to set
     additional parameters that will be passed on to the Haystack pipeline.
     """
     with concurrency_limiter.run():
-        result = _process_request(query_pipeline, request)
+        result = await _process_request(query_pipeline, request)
         return result
 
 
-def _process_request(pipeline, request) -> Dict[str, Any]:
+async def _process_request(pipeline, request) -> Dict[str, Any]:
     start_time = time.time()
 
     params = request.parameters or {}
@@ -89,7 +115,7 @@ def _process_request(pipeline, request) -> Dict[str, Any]:
         result["generated_text"] = chosen_ans
     else:
         result["generated_text"] = result["answers"][0].answer.strip()
-    
+
     logger.info(
         json.dumps(
             {

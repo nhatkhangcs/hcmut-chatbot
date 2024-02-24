@@ -1,5 +1,6 @@
 # SETTING UP PIPELINE
 #####################################################################################
+import re
 import random
 import logging
 from envs import *
@@ -34,6 +35,7 @@ class ChatbotPipeline:
             embedding_model=EMBEDDING_MODEL,
             model_format="sentence_transformers",
             top_k=EMBEDDING_TOP_K,
+            max_seq_len=EMBEDDING_MAX_LENGTH
         )
 
         faq_threshold = DocumentThreshold(threshold=FAQ_THRESHOLD)
@@ -175,12 +177,17 @@ class ChatbotPipeline:
             llm_params.update(kwargs["params"])
         kwargs["params"] = {}
 
+        conversation = re.split('<end_of_turn>\n<start_of_turn>model\n|<end_of_turn>\n<start_of_turn>user\n|<start_of_turn>user\n', query)
+        conversation = [x for x in conversation if x.strip() != ""]
+        context = "\n".join(conversation[:-1]).strip()
+        question = conversation[-1]
+
         kwargs["params"].update(self.faq_params)
-        faq_ans = self.faq_pipeline.run(query, **kwargs)
+        faq_ans = self.faq_pipeline.run(question, **kwargs)
 
         if len(faq_ans["answers"]) == 0 or faq_ans["answers"][0].answer.strip() == "":
             kwargs["params"].update(self.web_params)
-            web_ans = self.web_pipeline.run(query, **kwargs)
+            web_ans = self.web_pipeline.run(context + "\n" + query, **kwargs)
 
             kwargs["params"].pop("EmbeddingRetriever", None)
             if "Retriever" in kwargs["params"]:
@@ -189,10 +196,11 @@ class ChatbotPipeline:
 
             if len(web_ans["documents"]) > 0:
                 llm_ans = self.llm_pipeline.run(
-                    query, documents=web_ans["documents"], **kwargs
+                    question, documents=web_ans["documents"], **kwargs
                 )
                 return llm_ans
 
+            # Fallback only LLM
             fallback_ans = self.fallback_pipeline.run(query, **kwargs)
             warning = random.choice(WARNING_NOTES)
             fallback_ans["answers"][0].answer += f"\n\n{warning}"
@@ -203,7 +211,7 @@ class ChatbotPipeline:
             kwargs["params"].pop("Retriever", None)
         kwargs["params"].update({"prompt_node": {"generation_kwargs": llm_params}})
         template = FAQ_QUERY_TEMPLATE.format(
-            query=query, answer=faq_ans["answers"][0].answer
+            query=question, answer=faq_ans["answers"][0].answer
         )
         paraphrased_ans = self.paraphrase_pipeline.run(template, **kwargs)
         return paraphrased_ans
