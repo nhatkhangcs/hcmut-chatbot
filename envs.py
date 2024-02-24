@@ -28,7 +28,7 @@ REPETITION_PENALTY = 1.0
 # FAQ HYPERPARAMETERS
 FAQ_FILE = "data/hcmut_data_faq.csv"
 FAQ_THRESHOLD = 80
-FAQ_TEMPERATURE = 1.0
+FAQ_TEMPERATURE = 0.2
 FAQ_TOP_P = 0.99
 FAQ_TOP_K = 50
 # FAQ_PROMPT = """<s> [INST] <<SYS>> Hãy viết lại câu trả lời dùng thông tin bên dưới. <</SYS>>
