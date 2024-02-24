@@ -25,6 +25,12 @@ class RequestBaseModel(BaseModel):
         # Forbid any extra fields in the request to avoid silent failures
         extra = Extra.forbid
 
+class ChatUIQueryRequest(RequestBaseModel):
+    inputs: str
+    parameters: Optional[dict] = None
+    stream: Optional[bool] = False
+    options: Optional[dict] = None
+    debug: Optional[bool] = False
 
 class QueryRequest(RequestBaseModel):
     inputs: str
