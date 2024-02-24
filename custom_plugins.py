@@ -23,6 +23,6 @@ class DocumentThreshold(BaseComponent):
         return {
             "documents": [x for x in documents if x.score >= self.threshold]
         }, "output_1"
-        
+
     def run_batch(self, results, **kwargs):
         pass

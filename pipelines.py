@@ -11,11 +11,11 @@ from haystack.nodes import (
     EmbeddingRetriever,
     SentenceTransformersRanker,
     Docs2Answers,
-    TextConverter, 
-    FileTypeClassifier, 
-    PDFToTextConverter, 
-    MarkdownConverter, 
-    DocxToTextConverter
+    TextConverter,
+    FileTypeClassifier,
+    PDFToTextConverter,
+    MarkdownConverter,
+    DocxToTextConverter,
 )
 from invocation_layer import HFInferenceEndpointInvocationLayer
 from custom_plugins import DocumentThreshold
@@ -134,7 +134,7 @@ class ChatbotPipeline:
         self.faq_pipeline.add_node(
             component=docs2answers, name="Answer", inputs=["Threshold"]
         )
-        
+
         self.paraphrase_pipeline = Pipeline()
         self.paraphrase_pipeline.add_node(
             component=prompt_paraphrase, name="prompt_node", inputs=["Query"]
@@ -177,32 +177,37 @@ class ChatbotPipeline:
 
         kwargs["params"].update(self.faq_params)
         faq_ans = self.faq_pipeline.run(query, **kwargs)
-        
+
         if len(faq_ans["answers"]) == 0 or faq_ans["answers"][0].answer.strip() == "":
             kwargs["params"].update(self.web_params)
             web_ans = self.web_pipeline.run(query, **kwargs)
 
-            kwargs["params"].pop('EmbeddingRetriever', None)
-            if 'Retriever' in kwargs["params"]:
-                kwargs["params"].pop('Retriever', None)
+            kwargs["params"].pop("EmbeddingRetriever", None)
+            if "Retriever" in kwargs["params"]:
+                kwargs["params"].pop("Retriever", None)
             kwargs["params"].update({"prompt_node": {"generation_kwargs": llm_params}})
-            
+
             if len(web_ans["documents"]) > 0:
-                llm_ans = self.llm_pipeline.run(query, documents=web_ans["documents"], **kwargs)
+                llm_ans = self.llm_pipeline.run(
+                    query, documents=web_ans["documents"], **kwargs
+                )
                 return llm_ans
-                
+
             fallback_ans = self.fallback_pipeline.run(query, **kwargs)
             warning = random.choice(WARNING_NOTES)
-            fallback_ans['answers'][0].answer += f"\n\n{warning}"
+            fallback_ans["answers"][0].answer += f"\n\n{warning}"
             return fallback_ans
-            
-        kwargs["params"].pop('EmbeddingRetriever', None)
-        if 'Retriever' in kwargs["params"]:
-            kwargs["params"].pop('Retriever', None)
+
+        kwargs["params"].pop("EmbeddingRetriever", None)
+        if "Retriever" in kwargs["params"]:
+            kwargs["params"].pop("Retriever", None)
         kwargs["params"].update({"prompt_node": {"generation_kwargs": llm_params}})
-        template = FAQ_QUERY_TEMPLATE.format(query=query, answer=faq_ans["answers"][0].answer)
+        template = FAQ_QUERY_TEMPLATE.format(
+            query=query, answer=faq_ans["answers"][0].answer
+        )
         paraphrased_ans = self.paraphrase_pipeline.run(template, **kwargs)
         return paraphrased_ans
+
 
 def get_index_pipeline(document_store, preprocessor, embedding_retriever):
     file_type_classifier = FileTypeClassifier()
@@ -210,14 +215,32 @@ def get_index_pipeline(document_store, preprocessor, embedding_retriever):
     pdf_converter = PDFToTextConverter()
     md_converter = MarkdownConverter()
     docx_converter = DocxToTextConverter()
-    
+
     # This is an indexing pipeline
     index_pipeline = Pipeline()
-    index_pipeline.add_node(component=file_type_classifier, name="FileTypeClassifier", inputs=["File"])
-    index_pipeline.add_node(component=text_converter, name="TextConverter", inputs=["FileTypeClassifier.output_1"])
-    index_pipeline.add_node(component=pdf_converter, name="PdfConverter", inputs=["FileTypeClassifier.output_2"])
-    index_pipeline.add_node(component=md_converter, name="MarkdownConverter", inputs=["FileTypeClassifier.output_3"])
-    index_pipeline.add_node(component=docx_converter, name="DocxConverter", inputs=["FileTypeClassifier.output_4"])
+    index_pipeline.add_node(
+        component=file_type_classifier, name="FileTypeClassifier", inputs=["File"]
+    )
+    index_pipeline.add_node(
+        component=text_converter,
+        name="TextConverter",
+        inputs=["FileTypeClassifier.output_1"],
+    )
+    index_pipeline.add_node(
+        component=pdf_converter,
+        name="PdfConverter",
+        inputs=["FileTypeClassifier.output_2"],
+    )
+    index_pipeline.add_node(
+        component=md_converter,
+        name="MarkdownConverter",
+        inputs=["FileTypeClassifier.output_3"],
+    )
+    index_pipeline.add_node(
+        component=docx_converter,
+        name="DocxConverter",
+        inputs=["FileTypeClassifier.output_4"],
+    )
 
     index_pipeline.add_node(
         component=preprocessor,
@@ -237,6 +260,7 @@ def get_index_pipeline(document_store, preprocessor, embedding_retriever):
 
     return index_pipeline
 
+
 def setup_pipelines(args):
     # Re-import the configuration variables
     from rest_api import config  # pylint: disable=reimported
@@ -252,14 +276,14 @@ def setup_pipelines(args):
     if args.reindex:
         print("[+] Updating document embedding...")
         document_store.update_embeddings(
-            pipelines["query_pipeline"].faq_pipeline.get_node("EmbeddingRetriever"), 
-            index="faq", 
-            batch_size=DB_BATCH_SIZE
+            pipelines["query_pipeline"].faq_pipeline.get_node("EmbeddingRetriever"),
+            index="faq",
+            batch_size=DB_BATCH_SIZE,
         )
         document_store.update_embeddings(
-            pipelines["query_pipeline"].web_pipeline.get_node("EmbeddingRetriever"), 
-            index="web", 
-            batch_size=DB_BATCH_SIZE
+            pipelines["query_pipeline"].web_pipeline.get_node("EmbeddingRetriever"),
+            index="web",
+            batch_size=DB_BATCH_SIZE,
         )
     pipelines["document_store"] = document_store
 
@@ -274,10 +298,14 @@ def setup_pipelines(args):
     index_pipeline = get_index_pipeline(
         document_store,
         preprocessor=preprocessor,
-        embedding_retriever=pipelines["query_pipeline"].web_pipeline.get_node("EmbeddingRetriever"),
+        embedding_retriever=pipelines["query_pipeline"].web_pipeline.get_node(
+            "EmbeddingRetriever"
+        ),
     )
     if not index_pipeline:
-        logger.warning("Indexing Pipeline is not setup. File Upload API will not be available.")
+        logger.warning(
+            "Indexing Pipeline is not setup. File Upload API will not be available."
+        )
         # Create directory for uploaded files
         os.makedirs(FILE_UPLOAD_PATH, exist_ok=True)
     pipelines["indexing_pipeline"] = index_pipeline

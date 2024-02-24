@@ -9,9 +9,11 @@ import argparse
 # )
 # args = parser.parse_args()
 
+
 class Arguments:
     def __init__(self):
         self.reindex = False
         self.dev = False
+
 
 args = Arguments()
