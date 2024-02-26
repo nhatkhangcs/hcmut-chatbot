@@ -23,10 +23,10 @@ API_KEY = "hf_sample_api_key"
 MAX_ANSWER_LENGTH = 4096
 MAX_MODEL_LENGTH = 8192
 REPETITION_PENALTY = 1.0
-if "mix" in LLM_MODEL.lower():
+if "gem" in LLM_MODEL.lower():
     SEPERATORS = "<end_of_turn>\n<start_of_turn>model\n|<end_of_turn>\n<start_of_turn>user\n|<start_of_turn>user\n"
     STOP_WORDS = ["<end_of_turn>"]
-elif "gem" in LLM_MODEL.lower():
+elif "mix" in LLM_MODEL.lower():
     SEPERATORS = "[/INST]|</s> [INST]|<s> [INST]"
     STOP_WORDS = ["</s>"]
 else:
