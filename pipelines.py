@@ -177,9 +177,9 @@ class ChatbotPipeline:
             llm_params.update(kwargs["params"])
         kwargs["params"] = {}
 
-        conversation = re.split('<end_of_turn>\n<start_of_turn>model\n|<end_of_turn>\n<start_of_turn>user\n|<start_of_turn>user\n', query)
-        conversation = [x for x in conversation if x.strip() != ""]
-        context = "\n".join(conversation[:-1]).strip()
+        conversation = re.split(SEPERATORS, query)
+        conversation = [x.strip() for x in conversation if x.strip() != ""]
+        context = "\n".join(conversation[:-1])
         question = conversation[-1]
 
         kwargs["params"].update(self.faq_params)
@@ -187,7 +187,7 @@ class ChatbotPipeline:
 
         if len(faq_ans["answers"]) == 0 or faq_ans["answers"][0].answer.strip() == "":
             kwargs["params"].update(self.web_params)
-            web_ans = self.web_pipeline.run(context + "\n" + query, **kwargs)
+            web_ans = self.web_pipeline.run(context + "\n" + question, **kwargs)
 
             kwargs["params"].pop("EmbeddingRetriever", None)
             if "Retriever" in kwargs["params"]:

@@ -72,7 +72,7 @@ async def async_query(request: ChatUIQueryRequest):
             "token": {"id": 1, "text": "<eos>", "logprob": 0, "special": True},
             "generated_text": result["generated_text"],
             "details": None
-        }, ensure_ascii=False
+        }, ensure_ascii=False, separators=(',', ':')
     ) + "\n\n"
 
 

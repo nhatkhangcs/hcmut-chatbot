@@ -22,56 +22,55 @@ TGI_URL = "http://localhost:10025"
 API_KEY = "hf_sample_api_key"
 MAX_ANSWER_LENGTH = 4096
 MAX_MODEL_LENGTH = 8192
-STOP_WORDS = ["<end_of_turn>"]
 REPETITION_PENALTY = 1.0
-
+if "mix" in LLM_MODEL.lower():
+    SEPERATORS = "<end_of_turn>\n<start_of_turn>model\n|<end_of_turn>\n<start_of_turn>user\n|<start_of_turn>user\n"
+    STOP_WORDS = ["<end_of_turn>"]
+elif "gem" in LLM_MODEL.lower():
+    SEPERATORS = "[/INST]|</s> [INST]|<s> [INST]"
+    STOP_WORDS = ["</s>"]
+else:
+    raise NotImplementedError
+    
 # FAQ HYPERPARAMETERS
-FAQ_FILE = "data/hcmut_data_faq.csv"
+FAQ_FILE = "data/hcmut_data_faq_v2.csv"
 FAQ_THRESHOLD = 80
 FAQ_TEMPERATURE = 0.2
-FAQ_TOP_P = 0.99
+FAQ_TOP_P = 0.95
 FAQ_TOP_K = 50
-# FAQ_PROMPT = """<s> [INST] <<SYS>> Hãy viết lại câu trả lời dùng thông tin bên dưới. <</SYS>>
-# Câu hỏi: {query}
-# Trả lời: {answers[0]["answer"]}
-
-# Câu trả lời được viết lại: [/INST]"""
-# FAQ_PROMPT = """<s> <|im_start|>system
-# You are a helpful assistant.</s><|im_start|>user
-# Hãy viết lại câu trả lời dùng thông tin bên dưới.
-# Câu hỏi: {query}
-# Trả lời: {answers[0]["answer"]}</s><|im_start|>assistant
-# """
-FAQ_PROMPT = """<start_of_turn>user
+FAQ_QUERY_TEMPLATE = """Câu hỏi: {query}
+Trả lời: {answer}"""
+if "mix" in LLM_MODEL.lower():
+    FAQ_PROMPT = """<s> [INST] Bạn là một trợ lý thông minh. Hãy thực hiện các yêu cầu hoặc trả lời câu hỏi từ người dùng bằng tiếng Việt.
+Hãy viết lại câu trả lời theo một cách khác dùng thông tin bên dưới.
+{query} [/INST]
+Câu trả lời mới: """
+elif "gem" in LLM_MODEL.lower():
+    FAQ_PROMPT = """<start_of_turn>user
 Hãy viết lại câu trả lời theo một cách khác dùng thông tin bên dưới.
 {query}
 <end_of_turn>
 <start_of_turn>model
 Câu trả lời mới: """
-FAQ_QUERY_TEMPLATE = """Câu hỏi: {query}
-Trả lời: {answer}"""
+else:
+    raise NotImplementedError
+
 
 # WEB HYPERPARAMETERS
 WEB_FILE = "data/hcmut_data_web.csv"
 WEB_THRESHOLD = 50
 WEB_TEMPERATURE = 0.1
-WEB_TOP_P = 0.99
+WEB_TOP_P = 0.95
 WEB_TOP_K = 50
-# WEB_PROMPT = """<s> [INST] <<SYS>> Trả lời câu hỏi bằng ngữ cảnh cho sẵn. <</SYS>>
-# Ngữ cảnh: '''
-# {join(documents, "\n")}
-# '''
-# Câu hỏi: {query}
-# Trả lời: [/INST]"""
-# WEB_PROMPT = """<s> <|im_start|>system
-# You are a helpful assistant.</s><|im_start|>user
-# Trả lời câu hỏi bằng ngữ cảnh cho sẵn.
-# Ngữ cảnh: '''
-# {join(documents, "\n")}
-# '''
-# Câu hỏi: {query}</s><|im_start|>assistant
-# """
-WEB_PROMPT = """<start_of_turn>user
+if "mix" in LLM_MODEL.lower():
+    WEB_PROMPT = """<s> [INST] Trả lời câu hỏi bằng ngữ cảnh cho sẵn.
+Ngữ cảnh: '''
+{join(documents, "\n")}
+'''
+Câu hỏi: {query} [/INST]
+Trả lời: """
+elif "gem" in LLM_MODEL.lower():
+    WEB_PROMPT = """<start_of_turn>user
 Trả lời câu hỏi bằng ngữ cảnh cho sẵn.
 Ngữ cảnh: '''
 {join(documents, "\n")}
@@ -80,12 +79,11 @@ Câu hỏi: {query}
 <end_of_turn>
 <start_of_turn>model
 Trả lời: """
+else:
+    raise NotImplementedError
+    
 
-FREE_PROMPT = """<start_of_turn>user
-{query}
-<end_of_turn>
-<start_of_turn>model
-"""
+FREE_PROMPT = """{query}"""
 
 # OTHERS
 WARNING_NOTES = [
