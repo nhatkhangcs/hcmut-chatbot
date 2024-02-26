@@ -27,7 +27,7 @@ if "gem" in LLM_MODEL.lower():
     SEPERATORS = "<end_of_turn>\n<start_of_turn>model\n|<end_of_turn>\n<start_of_turn>user\n|<start_of_turn>user\n"
     STOP_WORDS = ["<end_of_turn>"]
 elif "mix" in LLM_MODEL.lower():
-    SEPERATORS = "[/INST]|</s> [INST]|<s> [INST]"
+    SEPERATORS = "\[\/INST\]|<\/s> \[INST\]|<s> \[INST\]"
     STOP_WORDS = ["</s>"]
 else:
     raise NotImplementedError
