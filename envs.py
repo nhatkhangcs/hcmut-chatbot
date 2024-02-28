@@ -38,6 +38,7 @@ FAQ_THRESHOLD = 80
 FAQ_TEMPERATURE = 0.2
 FAQ_TOP_P = 0.95
 FAQ_TOP_K = 50
+FAQ_ENABLE_PARAPHRASING = False
 FAQ_QUERY_TEMPLATE = """Câu hỏi: {query}
 Trả lời: {answer}"""
 if "mix" in LLM_MODEL.lower():

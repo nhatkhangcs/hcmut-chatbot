@@ -137,10 +137,11 @@ class ChatbotPipeline:
             component=docs2answers, name="Answer", inputs=["Threshold"]
         )
 
-        self.paraphrase_pipeline = Pipeline()
-        self.paraphrase_pipeline.add_node(
-            component=prompt_paraphrase, name="prompt_node", inputs=["Query"]
-        )
+        if FAQ_ENABLE_PARAPHRASING:
+            self.paraphrase_pipeline = Pipeline()
+            self.paraphrase_pipeline.add_node(
+                component=prompt_paraphrase, name="prompt_node", inputs=["Query"]
+            )
 
         self.web_pipeline = Pipeline()
         self.web_params = {"EmbeddingRetriever": {"index": "web"}}
@@ -205,16 +206,19 @@ class ChatbotPipeline:
             warning = random.choice(WARNING_NOTES)
             fallback_ans["answers"][0].answer += f"\n\n{warning}"
             return fallback_ans
-
-        kwargs["params"].pop("EmbeddingRetriever", None)
-        if "Retriever" in kwargs["params"]:
-            kwargs["params"].pop("Retriever", None)
-        kwargs["params"].update({"prompt_node": {"generation_kwargs": llm_params}})
-        template = FAQ_QUERY_TEMPLATE.format(
-            query=question, answer=faq_ans["answers"][0].answer
-        )
-        paraphrased_ans = self.paraphrase_pipeline.run(template, **kwargs)
-        return paraphrased_ans
+            
+        if FAQ_ENABLE_PARAPHRASING:
+            kwargs["params"].pop("EmbeddingRetriever", None)
+            if "Retriever" in kwargs["params"]:
+                kwargs["params"].pop("Retriever", None)
+            kwargs["params"].update({"prompt_node": {"generation_kwargs": llm_params}})
+            template = FAQ_QUERY_TEMPLATE.format(
+                query=question, answer=faq_ans["answers"][0].answer
+            )
+            paraphrased_ans = self.paraphrase_pipeline.run(template, **kwargs)
+            return paraphrased_ans
+        else:
+            return faq_ans
 
 
 def get_index_pipeline(document_store, preprocessor, embedding_retriever):
