@@ -179,7 +179,7 @@ class ChatbotPipeline:
         kwargs["params"] = {}
 
         conversation = re.split(SEPERATORS, query)
-        conversation = [x.strip() for x in conversation if x.strip() != ""]
+        conversation = [x.strip().split("----------")[0] for x in conversation if x.strip() != ""]
         context = "\n".join(conversation[:-1]).strip()
         question = conversation[-1]
 
