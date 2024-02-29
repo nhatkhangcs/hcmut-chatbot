@@ -14,7 +14,7 @@ BM25_TOP_K = 100
 EMBEDDING_MODEL = "bkai-foundation-models/vietnamese-bi-encoder"
 EMBEDDING_DIM = 768
 EMBEDDING_MAX_LENGTH = 256
-EMBEDDING_TOP_K = 3
+EMBEDDING_TOP_K = 5
 
 # LLM API ENDPOINT
 LLM_MODEL = "google/gemma-7b-it"
@@ -33,7 +33,7 @@ else:
     raise NotImplementedError
     
 # FAQ HYPERPARAMETERS
-FAQ_FILE = "data/hcmut_data_faq_v2.csv"
+FAQ_FILE = "data/hcmut_data_faq_v3.csv"
 FAQ_THRESHOLD = 80
 FAQ_TEMPERATURE = 0.2
 FAQ_TOP_P = 0.95
@@ -58,7 +58,7 @@ else:
 
 
 # WEB HYPERPARAMETERS
-WEB_FILE = "data/hcmut_data_web.csv"
+WEB_FILE = "data/hcmut_data_web_v2.json"
 WEB_THRESHOLD = 50
 WEB_TEMPERATURE = 0.1
 WEB_TOP_P = 0.95

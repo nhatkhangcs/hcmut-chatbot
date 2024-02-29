@@ -32,11 +32,11 @@ def initialize_db(args):
         clean_whitespace=True,
         clean_header_footer=True,
         remove_substrings=None,
-        split_by="word",
-        split_length=EMBEDDING_MAX_LENGTH // 3,
-        split_respect_sentence_boundary=True,
+        split_by="passage",
+        split_length=1,
+        split_respect_sentence_boundary=False,
         split_overlap=0,
-        max_chars_check=int(EMBEDDING_MAX_LENGTH),
+        max_chars_check=10000,
     )
 
     if args.reindex:
