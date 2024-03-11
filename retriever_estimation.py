@@ -6,6 +6,7 @@ from arguments import args
 import pandas as pd
 from envs import *
 import tqdm
+import os
 
 def read_input_file(filename, query_column, groundtruth_column):
     df = pd.read_csv(filename)
@@ -53,4 +54,4 @@ for query, truth in tqdm.tqdm(zip(queries, groundtruth), desc="Retrieving Query:
 
 # Output to excel file
 df = pd.DataFrame(output_data)
-df.to_excel("output_file.xlsx", index=False)
+df.to_excel(os.path.join("data", "output_file.xlsx"), index=False)

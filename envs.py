@@ -25,6 +25,8 @@ REPETITION_PENALTY = 1.1
 # FAQ HYPERPARAMETERS
 # FAQ_FILE = "data/hcmut_data_faq.xlsx"
 FAQ_FILE = "data/hcmut_tuyensinh_faq.csv"
+# FAQ_FILE = "Enriched_FAQ - FAQ Dataset.csv"
+
 FAQ_THRESHOLD = 80
 FAQ_TEMPERATURE = 0.3
 FAQ_TOP_P = 0.9

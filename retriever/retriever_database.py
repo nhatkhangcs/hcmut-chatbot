@@ -1,10 +1,6 @@
 # INITIALIZE DATABASE
 #####################################################################################
-import sys
-import os
-sys.path.append(os.getcwd())
 
-import re
 import pandas as pd
 from envs import *
 from tqdm import tqdm

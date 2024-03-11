@@ -1,10 +1,8 @@
 # SETTING UP PIPELINE
 #####################################################################################
 import sys
-import os
-sys.path.append(os.getcwd())
+sys.path.append('.')
 
-import random
 import logging
 from envs import *
 from haystack import Pipeline
@@ -18,7 +16,7 @@ from haystack.nodes import (
 )
 from invocation_layer import HFInferenceEndpointInvocationLayer
 from custom_plugins import DocumentThreshold
-from retriever_database import initialize_db
+from . import retriever_database
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +93,7 @@ def setup_retriever_pipelines(args):
     from rest_api.controller.utils import RequestLimiter
 
     pipelines = {}
-    document_store = initialize_db(args)
+    document_store = retriever_database.initialize_db(args)
 
     # Load query pipeline & document store
     print("[+] Setting up pipeline...")
