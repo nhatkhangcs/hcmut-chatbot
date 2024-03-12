@@ -68,7 +68,7 @@ class RetrieverPipeline:
             kwargs["params"] = {}
 
         kwargs["params"].update(self.faq_params)
-        faq_ans = self.faq_pipeline.run(query, **kwargs)
+        faq_ans = self.faq_pipeline.run_batch(query, **kwargs)
 
         # # Nếu trong trường hợp chạy database không ra kết quả thì cần phải chạy sang web API để lấy ra kết quả
         # if len(faq_ans["answers"]) == 0 or faq_ans["answers"][0].answer.strip() == "":

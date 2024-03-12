@@ -24,5 +24,7 @@ class DocumentThreshold(BaseComponent):
             "documents": [x for x in documents if x.score > self.threshold]
         }, "output_1"
 
-    def run_batch(self, results, **kwargs):
-        pass
+    def run_batch(self, documents: List[List[Document]]) -> Tuple[Dict, str]: 
+        return {
+            'documents': [[x for x in item if x.score > self.threshold] for item in documents]
+        }, "output_1"
